@@ -107,3 +107,22 @@ jobs:
       - run: node scripts/check-consumer.mjs
         env:
           TYPESCRIPT_VERSION: ${{ matrix.typescript }}
+
+  published:
+    name: Install the released packages from npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Nothing local is involved: this installs whatever is on the public
+      # registry under the "latest" tag and checks that it works. It is the
+      # only job that can catch a release that went out wrong rather than a
+      # build that came out wrong.
+      #
+      # Until the first release exists the registry returns a 404 for all three
+      # packages, and the script treats that as a skip, so this is green on a
+      # repository that has never published.
+      - run: node scripts/check-published.mjs

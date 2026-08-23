@@ -36,7 +36,8 @@
     "typecheck:packages": "pnpm --filter \"./packages/*\" exec tsc --noEmit",
     "build:docs": "pnpm build && typedoc",
     "check:release": "node scripts/check-release.mjs",
-    "release:tag": "node scripts/tag-release.mjs"
+    "release:tag": "node scripts/tag-release.mjs",
+    "check:published": "node scripts/check-published.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

@@ -79,6 +79,19 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
 
+      # The registry takes a moment to serve what was just written, so wait for
+      # the version to be readable before checking it. This is the same script
+      # ci.yml runs; here it is confirming the release that just happened.
+      - name: Verify the release from the registry
+        run: |
+          version="${RELEASE_TAG#v}"
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "@stevenpg/cesium-h3@$version" version >/dev/null 2>&1; then break; fi
+            echo "waiting for $version to appear on the registry (attempt $attempt)"
+            sleep 20
+          done
+          node scripts/check-published.mjs
+
       - name: Collect the changelog entries for this version
         run: node scripts/release-notes.mjs "${RELEASE_TAG#v}" > /tmp/notes.md
 

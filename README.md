@@ -129,6 +129,7 @@ pnpm build:site       # the whole Pages site into docs-dist/
 pnpm test:e2e         # drive the demo in a real browser
 pnpm check:pack       # inspect what would actually publish
 pnpm check:consumer   # pack, npm install, typecheck, run and bundle the examples
+pnpm check:published  # install the released packages from npm and verify them
 ```
 
 Unit tests cover the geometry, cover and level-of-detail logic, none of which needs a WebGL context.
@@ -139,7 +140,7 @@ Everything that needs a camera or a pick is covered by the browser tests in `e2e
 
 | Workflow | What it does |
 | --- | --- |
-| `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; a full consumer install; and the declarations against four TypeScript versions |
+| `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; a full consumer install; the declarations against four TypeScript versions; and the released packages pulled from npm |
 | `e2e.yml` | Ten Playwright tests driving the built demo in a real browser |
 | `cesium-matrix.yml` | The packages against five CesiumJS versions, weekly and whenever they change |
 | `version.yml` | Keeps a version pull request open as changesets accumulate |
@@ -167,6 +168,21 @@ repository and fails only here.
 
 `scripts/check-pack.mjs` sits alongside it and refuses to let a tarball publish
 a `workspace:` range, which npm cannot install and nothing else notices.
+
+`scripts/check-published.mjs` closes the last gap, which is the difference
+between a build that came out wrong and a release that went out wrong. It
+installs the three packages from the public registry with nothing local
+involved, confirms each tarball contains what its manifest claims, that every
+`exports` target and source map reference resolves inside the published package,
+that the registry signatures and provenance attestations verify, and that the
+result typechecks, runs and bundles. Before the first release the registry
+returns a 404 and the script skips, so the job is green on a repository that has
+never published and starts doing real work the moment one exists. It also runs
+after a publish, against the release that just happened.
+
+The program it compiles there is deliberately frozen to API from the first
+release. Growing it to cover a newer export would make the job fail against the
+version that is actually live, which is the opposite of the point.
 
 Dependabot watches npm and the actions themselves, grouping the toolchain into
 one pull request a week. CesiumJS is deliberately excluded: the peer range is a

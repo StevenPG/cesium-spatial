@@ -1,0 +1,42 @@
+# Verifies the `cesium >= 1.95` peer range the READMEs claim.
+#
+# Only the packages are checked, not the demo — the demo uses newer Viewer
+# options on purpose and is not part of the compatibility promise.
+name: Cesium compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**'
+      - '.github/workflows/cesium-matrix.yml'
+  schedule:
+    # Weekly, so a new CesiumJS release that breaks the range shows up on its
+    # own rather than when someone happens to open a pull request.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  compatibility:
+    name: cesium ${{ matrix.cesium }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cesium: ['1.95.0', '1.110.0', '1.120.0', '1.144.0', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # An override pins one version across every workspace package at once,
+      # which a per-package install cannot do reliably.
+      - name: Pin CesiumJS to ${{ matrix.cesium }}
+        run: pnpm pkg set "pnpm.overrides.cesium=${{ matrix.cesium }}"
+
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter "./packages/*" exec tsc --noEmit
+      - run: pnpm test
+      - run: pnpm build

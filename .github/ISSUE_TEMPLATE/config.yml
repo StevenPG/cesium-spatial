@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Live demo
+    url: https://stevenpg.github.io/cesium-spatial/demo.html
+    about: Check whether the behavior reproduces in the demo before filing.
+  - name: API reference
+    url: https://stevenpg.github.io/cesium-spatial/api/
+    about: Generated documentation for every exported symbol.

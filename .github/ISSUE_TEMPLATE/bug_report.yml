@@ -1,0 +1,38 @@
+name: Bug report
+description: Something behaves differently from what the documentation describes.
+labels: [bug]
+body:
+  - type: dropdown
+    id: package
+    attributes:
+      label: Package
+      options:
+        - '@stevenpg/cesium-h3'
+        - '@stevenpg/cesium-s2'
+        - '@stevenpg/cesium-spatial-core'
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: The package version and the CesiumJS version you are running against.
+      placeholder: '@stevenpg/cesium-h3 0.1.0, cesium 1.144.0'
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, what you got instead, and how to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where on the globe
+      description: >
+        Coordinates, extent or cell ids if the problem is location-dependent. Antimeridian, polar
+        and cube-face-boundary cases behave differently from the rest of the globe, so this often
+        matters more than it looks.

@@ -1,0 +1,96 @@
+/*
+ * Pulls the generated API reference into the same visual language as the
+ * landing page and demo: the instrument palette, JetBrains Mono for code and
+ * signatures, hairline rules instead of heavy borders.
+ *
+ * Only theme variables and a few structural rules are overridden, so TypeDoc's
+ * own layout, search and light/dark toggle keep working.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --cs-accent: #4ee1c1;
+  --cs-accent-alt: #7aa2ff;
+  --cs-font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --cs-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --dark-color-background: #080b14;
+  --dark-color-background-secondary: #111726;
+  --dark-color-accent: #1d2740;
+  --dark-color-text: #dbe3f2;
+  --dark-color-text-aside: #8b98b4;
+  --dark-color-link: #4ee1c1;
+  --dark-color-active-menu-item: #18203a;
+  --dark-color-focus-outline: #7aa2ff;
+
+  --light-color-link: #10796a;
+  --light-color-focus-outline: #4a6fd0;
+}
+
+body {
+  font-family: var(--cs-font);
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+pre,
+.tsd-signature,
+.tsd-signatures,
+.tsd-kind-icon + span,
+.tsd-breadcrumb {
+  font-family: var(--cs-mono);
+}
+
+/* Header: a thin instrument bar rather than a floating toolbar. */
+.tsd-page-toolbar {
+  border-bottom: 1px solid var(--dark-color-accent);
+  backdrop-filter: blur(12px);
+}
+
+.tsd-toolbar-contents .title {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Section headings read as labels, matching the demo rail. */
+.tsd-panel-group > h2,
+.tsd-index-heading {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dark-color-text-aside);
+}
+
+.tsd-panel {
+  border: 1px solid var(--dark-color-accent);
+  border-radius: 10px;
+}
+
+/* Signatures are the thing people came for: give them room and contrast. */
+.tsd-signature {
+  border: 1px solid var(--dark-color-accent);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.tsd-description .tsd-comment p {
+  line-height: 1.65;
+  max-width: 76ch;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+.tsd-navigation a.current,
+.tsd-navigation a:hover {
+  border-radius: 5px;
+}
+
+/* Keep long type expressions scrollable rather than blowing out the page. */
+.tsd-signature,
+.tsd-panel > table {
+  overflow-x: auto;
+}

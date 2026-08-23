@@ -1,0 +1,707 @@
+:root {
+  --bg: #0b1020;
+  --bg-elevated: #141a2e;
+  --bg-panel: rgba(14, 19, 36, 0.88);
+  --border: #263050;
+  --hairline: #1d2740;
+  --hairline-bright: #2f3d5c;
+  --rail: rgba(9, 13, 24, 0.94);
+  --warn: #ffb454;
+  --text: #e6ebf5;
+  --text-dim: #97a3bd;
+  --accent: #4ee1c1;
+  --accent-dim: #2b9c88;
+  --accent-alt: #7aa2ff;
+  --radius: 10px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+}
+
+code,
+pre {
+  font-family: var(--mono);
+}
+
+/* ---------- landing page ---------- */
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 24px 96px;
+}
+
+.hero {
+  padding: 96px 0 56px;
+}
+
+.eyebrow {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 16px;
+}
+
+.hero h1 {
+  font-size: clamp(36px, 6vw, 60px);
+  line-height: 1.05;
+  margin: 0 0 20px;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 62ch;
+  margin: 0 0 32px;
+}
+
+.cta-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.button {
+  display: inline-block;
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--bg-elevated);
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.button:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-1px);
+}
+.button.primary {
+  background: var(--accent);
+  color: #06231d;
+  border-color: var(--accent);
+}
+
+section {
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+}
+section h2 {
+  font-size: 24px;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+section > p {
+  color: var(--text-dim);
+  line-height: 1.65;
+  max-width: 68ch;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+.card h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--accent);
+}
+.card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+pre {
+  background: #070b16;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin: 20px 0 0;
+}
+
+.note {
+  margin-top: 20px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--accent-dim);
+  background: var(--bg-elevated);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 28px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* =========================================================================
+   Demo page — an instrument panel, not a settings dialog.
+   Numerals are tabular and monospaced, rules are hairlines, and color is
+   reserved for state that means something: drawn, wanted, blocked.
+   ========================================================================= */
+
+.viewer-shell {
+  position: fixed;
+  inset: 0;
+}
+#cesiumContainer {
+  position: absolute;
+  inset: 0;
+}
+
+/* OpenStreetMap requires visible attribution: style the credits, never hide them. */
+#cesiumContainer .cesium-widget-credits {
+  /* Cesium lays the credits out statically, so absolute offsets need this. */
+  position: absolute;
+  left: auto;
+  right: 12px;
+  bottom: 8px;
+  z-index: 5;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(7, 11, 22, 0.72);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+#cesiumContainer .cesium-widget-credits a {
+  color: var(--text-dim);
+}
+
+/* ---------- rail ---------- */
+
+.rail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 316px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--rail);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid var(--hairline-bright);
+  font-size: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline-bright) transparent;
+}
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--hairline-bright);
+}
+
+.mark {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.mark span {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+/* System switch: a two-position selector, S2 held out until v0.2. */
+.switch {
+  display: flex;
+  border: 1px solid var(--hairline-bright);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.switch button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.switch button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #06231d;
+  font-weight: 600;
+}
+.switch button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+/* ---------- modules ---------- */
+
+.module {
+  padding: 13px 16px 15px;
+  border-bottom: 1px solid var(--hairline);
+}
+.module:last-child {
+  border-bottom: 0;
+}
+
+.module-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+.module-head h2 {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Mode tag: reads "auto" until a rung is pinned. */
+.mode {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border: 1px solid var(--hairline-bright);
+  border-radius: 3px;
+  color: var(--text-dim);
+}
+.mode[data-pinned='true'] {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+/* ---------- resolution ladder ---------- */
+
+.ladder-wrap {
+  position: relative;
+}
+
+.ladder {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The target marker is a separate overlay sharing the rung grid, so the line
+   lands exactly on the track column whatever the rail width. */
+.ladder-target {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 22px 1fr 62px;
+  gap: 7px;
+  pointer-events: none;
+}
+.ladder-target > span:nth-child(2) {
+  position: relative;
+}
+.ladder-target i {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: var(--target, 50%);
+  width: 1px;
+  background: repeating-linear-gradient(to bottom, var(--accent-alt) 0 3px, transparent 3px 6px);
+}
+
+.rung {
+  display: grid;
+  grid-template-columns: 22px 1fr 62px;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  /* Set per system: S2's thirty-one levels need tighter rungs than H3's sixteen. */
+  height: var(--rung-height, 16px);
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  cursor: pointer;
+  text-align: left;
+}
+.rung:hover .rung-track {
+  background: var(--hairline-bright);
+}
+.rung:focus-visible {
+  outline: 1px solid var(--accent-alt);
+  outline-offset: -1px;
+}
+
+.rung-res {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.rung-edge {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.rung-track {
+  position: relative;
+  height: 7px;
+  background: var(--hairline);
+  border-radius: 1px;
+}
+.rung-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--w, 0%);
+  background: #34405e;
+  border-radius: 1px;
+  transition: width 0.18s ease;
+}
+
+/* Drawn: the resolution actually on screen right now. */
+.rung.is-drawn {
+  color: var(--text);
+}
+.rung.is-drawn .rung-res {
+  color: var(--accent);
+  font-weight: 600;
+}
+.rung.is-drawn .rung-bar {
+  background: var(--accent);
+}
+
+/* Wanted: what the camera asks for, before the budget has its say. Only
+   visibly distinct when the budget forced something coarser. */
+.rung.is-wanted .rung-res {
+  color: var(--warn);
+}
+.rung.is-wanted .rung-bar {
+  background: var(--warn);
+}
+.rung.is-wanted.is-drawn .rung-res {
+  color: var(--accent);
+}
+.rung.is-wanted.is-drawn .rung-bar {
+  background: var(--accent);
+}
+
+/* Blocked: this resolution would overrun the cell budget. */
+.rung.is-blocked {
+  opacity: 0.42;
+}
+.rung.is-blocked .rung-bar {
+  background: repeating-linear-gradient(45deg, #4a5878 0 2px, transparent 2px 4px);
+}
+
+.rung.is-pinned .rung-track {
+  box-shadow: 0 0 0 1px var(--warn);
+}
+
+.ladder-key {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0 0;
+  font-size: 10px;
+  color: var(--text-dim);
+}
+.ladder-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ladder-key span::before {
+  content: '';
+  width: 8px;
+  height: 3px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.key-drawn {
+  color: var(--accent);
+}
+.key-wanted {
+  color: var(--warn);
+}
+.key-blocked {
+  color: #4a5878;
+}
+
+.ladder-hint {
+  margin: 7px 0 0;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ---------- gauges ---------- */
+
+.gauges {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.gauges > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--hairline);
+}
+.gauges > div:last-child {
+  border-bottom: 0;
+}
+.gauges dt {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.gauges dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.gauges dd.is-flagged {
+  color: var(--warn);
+}
+
+/* ---------- fields ---------- */
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0;
+}
+.field:first-of-type {
+  margin-top: 0;
+}
+.field label {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.field output {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  min-width: 46px;
+  text-align: right;
+}
+
+input[type='range'] {
+  appearance: none;
+  width: 120px;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--hairline-bright);
+}
+input[type='range']::-moz-range-track {
+  height: 2px;
+  background: var(--hairline-bright);
+}
+input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 3px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 0;
+  background: var(--accent);
+}
+input[type='range']::-moz-range-thumb {
+  width: 3px;
+  height: 12px;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent);
+}
+input[type='range']:focus-visible {
+  outline: 1px solid var(--accent-alt);
+  outline-offset: 2px;
+}
+
+/* Checkboxes as instrument switches, keeping native semantics and keyboard use. */
+input[type='checkbox'] {
+  appearance: none;
+  width: 26px;
+  height: 13px;
+  margin: 0;
+  border: 1px solid var(--hairline-bright);
+  border-radius: 2px;
+  background: transparent;
+  position: relative;
+  cursor: pointer;
+}
+input[type='checkbox']::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 9px;
+  background: var(--hairline-bright);
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease;
+}
+input[type='checkbox']:checked {
+  border-color: var(--accent-dim);
+}
+input[type='checkbox']:checked::after {
+  transform: translateX(12px);
+  background: var(--accent);
+}
+input[type='checkbox']:focus-visible {
+  outline: 1px solid var(--accent-alt);
+  outline-offset: 2px;
+}
+
+select,
+input[type='password'] {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border: 1px solid var(--hairline-bright);
+  border-radius: 3px;
+  padding: 4px 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+}
+select:focus-visible,
+input[type='password']:focus-visible {
+  outline: 1px solid var(--accent-alt);
+  outline-offset: 1px;
+}
+
+/* ---------- selection readout ---------- */
+
+.readout {
+  border: 1px solid var(--hairline);
+  border-left: 2px solid var(--accent-dim);
+  padding: 9px 11px;
+  background: #060911;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.85;
+  word-break: break-all;
+}
+.readout .empty {
+  color: var(--text-dim);
+  font-family: var(--font);
+  font-size: 11.5px;
+}
+.readout b {
+  color: var(--text-dim);
+  font-weight: 400;
+  display: inline-block;
+  min-width: 66px;
+}
+.readout .v {
+  color: var(--text);
+}
+
+.note-line {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ---------- scale bar over the globe ---------- */
+
+.hint {
+  position: absolute;
+  bottom: 16px;
+  left: calc(316px + 24px);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 7px 14px;
+  background: rgba(9, 13, 24, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--hairline-bright);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+.hint kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text);
+  border: 1px solid var(--hairline-bright);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+@media (max-width: 720px) {
+  .rail {
+    width: 264px;
+  }
+  .hint {
+    left: calc(264px + 16px);
+    right: 16px;
+  }
+  /* Keep every field on one line at the narrow rail width. */
+  .field label {
+    font-size: 10.5px;
+  }
+  input[type='range'] {
+    width: 78px;
+  }
+  .field output {
+    min-width: 38px;
+    font-size: 10.5px;
+  }
+}

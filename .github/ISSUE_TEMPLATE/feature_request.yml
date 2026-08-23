@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest something the libraries should be able to do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The problem you hit, rather than the API you have in mind for solving it.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How are you working around it today
+      description: Including "I am not" — knowing the workaround usually shapes the fix.
+  - type: textarea
+    id: shape
+    attributes:
+      label: What you think it should look like
+      description: Optional. A sketch of the API if you have one in mind.

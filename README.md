@@ -1,2 +1,191 @@
 # cesium-spatial
-A simple cesium-connected library that provides easy to use h3 functionality on a cesium globe.
+
+[![cesium-h3 on npm](https://img.shields.io/npm/v/@stevenpg/cesium-h3?label=cesium-h3&color=4ee1c1)](https://www.npmjs.com/package/@stevenpg/cesium-h3)
+[![cesium-s2 on npm](https://img.shields.io/npm/v/@stevenpg/cesium-s2?label=cesium-s2&color=4ee1c1)](https://www.npmjs.com/package/@stevenpg/cesium-s2)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![CesiumJS](https://img.shields.io/badge/cesium-%E2%89%A5%201.95-6bafd6)](https://cesium.com/platform/cesiumjs/)
+[![CI](https://github.com/StevenPG/cesium-spatial/actions/workflows/ci.yml/badge.svg)](https://github.com/StevenPG/cesium-spatial/actions/workflows/ci.yml)
+[![Browser tests](https://github.com/StevenPG/cesium-spatial/actions/workflows/e2e.yml/badge.svg)](https://github.com/StevenPG/cesium-spatial/actions/workflows/e2e.yml)
+
+H3 and S2 grid cells on a CesiumJS globe, without having to learn H3 or S2 first.
+
+Cover whatever the camera is looking at, draw thousands of cells as a single batched primitive, and
+walk neighbors, parents and children in Cesium's own vocabulary — longitude before latitude,
+degrees in, Cesium types out.
+
+![The H3 grid at resolution zero over a Cesium globe, with the demo's resolution ladder alongside it](docs/media/hero.jpg)
+
+**[Live demo](https://stevenpg.github.io/cesium-spatial/demo.html)** ·
+**[API reference](https://stevenpg.github.io/cesium-spatial/api/)**
+
+## Install
+
+```bash
+npm install @stevenpg/cesium-h3 cesium
+```
+
+```ts
+import { Viewer } from 'cesium';
+import { H3ViewLayer } from '@stevenpg/cesium-h3';
+
+const viewer = new Viewer('cesiumContainer');
+
+// Watches the camera, picks a resolution, respects a cell budget.
+new H3ViewLayer(viewer.scene, { maxCells: 8000, outlines: true });
+```
+
+That is the whole feature in one object. Everything underneath it is a plain function you can call
+directly when you want the pieces rather than the package deal.
+
+## Why this exists
+
+Putting a discrete global grid on a Cesium globe is deceptively fiddly, and most of the difficulty
+is not in H3 or S2 themselves.
+
+Cesium has no zoom levels, so deciding which resolution to draw means measuring ground
+meters-per-pixel from the frustum rather than reading a number off the camera. Drawing thousands of
+cells means batching them into one primitive, which in turn means recoloring has to write into
+per-instance attributes instead of rebuilding geometry, and picking has to map a geometry instance
+back to something your application recognizes. A zoomed-out view has no natural bound at all, so
+something has to estimate the cost of a cover before generating it rather than after.
+
+Then there are the places where the grids stop behaving uniformly. H3 reads any polygon whose
+longitudes jump more than 180° as crossing the antimeridian, with no way to say otherwise, so asking
+for the 200° around Greenwich quietly returns the 160° around the dateline instead — a plausible
+cell count made of entirely the wrong cells. H3 also has twelve pentagons where the fast neighbor
+routines return nothing. S2 has no pentagons and handles wrapping extents natively, but its coverer
+treats a minimum level as non-negotiable and will hand back millions of cells rather than truncate,
+and its two polar cube faces enclose a pole rather than touching it.
+
+Each of those is a day lost to something that is not the problem you sat down to solve. This library
+is the accumulated answer to them.
+
+## Packages
+
+| Package | Description |
+| --- | --- |
+| [`@stevenpg/cesium-h3`](packages/h3) | The H3 hexagonal grid |
+| [`@stevenpg/cesium-s2`](packages/s2) | The S2 quadrilateral grid |
+| [`@stevenpg/cesium-spatial-core`](packages/core) | Shared rendering, picking, camera and level-of-detail |
+
+Install whichever grid you need; core arrives as its dependency. Reach for core directly only if you
+are adapting a different index onto the same machinery.
+
+The two grid packages share that core but deliberately keep their own vocabulary. H3 speaks of
+resolutions, disks and rings; S2 of levels, tokens and cube faces. Each reads naturally to someone
+who already knows that index, at the cost of a small shim if you want to switch between them at
+runtime — [the demo's is about thirty lines](apps/demo/src/systems.ts).
+
+## What you get
+
+Beyond the view-driven layer, both packages cover the same ground in their own idiom: traversal
+across neighbors, parents, children and compaction; cell boundaries as Cesium positions,
+cartographics or rectangles; covers from a rectangle, a polygon or the current camera; and layers
+that render either as one batched primitive or as individual entities.
+
+`H3CellLayer` and `S2CellLayer` are the default: thousands of cells become a single `Primitive`, and
+`setCellStyle` recolors or hides one of them without touching geometry. The entity layers cost far
+more per cell and give each one a real Cesium `Entity` in exchange, with either an options bag or a
+full construction hook. Both support terrain clamping, extrusion into prisms, and optional outlines.
+
+`CellPicker` resolves a click or hover on a batched primitive back to a cell id, which is the part
+most people hand-roll incorrectly.
+
+![H3 cells extruded into prisms above the globe](docs/media/extruded.jpg)
+
+## Examples
+
+[`examples/`](examples) holds short programs for the things people actually
+reach for: a camera-driven grid, click-to-cell with a resolution slider,
+aggregating points into per-cell counts, cells as 3D bars, covering a rectangle
+or polygon, picking and traversal, entities, and the S2 equivalents. They are
+typechecked against the published declarations as part of `pnpm verify`, and
+bundled against the built package in CI, so they cannot quietly rot.
+
+## Cesium compatibility
+
+Cesium is a peer dependency, so these packages never bundle a second copy of the engine. The
+declared range is `cesium >= 1.95`, and the code sticks to APIs that have been stable far longer
+than that. `@cesium/engine` is supported as an optional peer; everything used lives in engine, so an
+engine-only project can alias `cesium` to it in the bundler.
+
+The floor is verified rather than assumed: `cesium-matrix.yml` typechecks and tests the packages
+against 1.95, 1.110, 1.120, 1.144 and the current release, weekly and on every change to
+`packages/`.
+
+## Development
+
+```bash
+pnpm install
+pnpm verify           # format check, lint, typecheck, tests, package builds
+pnpm dev              # demo at http://localhost:5173/cesium-spatial/
+pnpm build:site       # the whole Pages site into docs-dist/
+pnpm test:e2e         # drive the demo in a real browser
+pnpm check:pack       # inspect what would actually publish
+pnpm check:consumer   # pack, npm install, typecheck, run and bundle the examples
+```
+
+Unit tests cover the geometry, cover and level-of-detail logic, none of which needs a WebGL context.
+Everything that needs a camera or a pick is covered by the browser tests in `e2e/` instead.
+[CONTRIBUTING.md](CONTRIBUTING.md) has the rest.
+
+## Continuous integration
+
+Everything below runs on pull requests and on pushes to `main`.
+
+| Workflow | What it does |
+| --- | --- |
+| `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; and a full consumer install |
+| `e2e.yml` | Ten Playwright tests driving the built demo in a real browser |
+| `cesium-matrix.yml` | The packages against five CesiumJS versions, weekly and whenever they change |
+| `release.yml` | Opens a version pull request as changesets accumulate, then publishes with provenance |
+| `pages.yml` | Builds and deploys this site |
+
+### What actually gets tested against the built package
+
+Worth being precise, because it is easy to build a pipeline that never touches
+what ships. The demo's bundler is aliased straight at `packages/*/src`, and the
+examples are typechecked against the generated declarations — neither resolves
+the built entry point at runtime.
+
+`scripts/check-consumer.mjs` is the step that does. It packs the real tarballs,
+installs them into a throwaway project with plain npm, and then typechecks the
+published declarations, executes the ESM output under Node, bundles every
+example in `examples/` against the built package with esbuild, and asserts that
+importing one function still bundles smaller than importing everything. A broken
+`exports` map or a file missing from `files` passes every other check in the
+repository and fails only here.
+
+`scripts/check-pack.mjs` sits alongside it and refuses to let a tarball publish
+a `workspace:` range, which npm cannot install and nothing else notices.
+
+Dependabot watches npm and the actions themselves, grouping the toolchain into
+one pull request a week. CesiumJS is deliberately excluded: the peer range is a
+compatibility promise rather than something to bump automatically, and the
+weekly matrix run covers new releases instead.
+
+## Releasing
+
+Versioning runs on [Changesets](https://github.com/changesets/changesets), with all three packages
+moving in lockstep.
+
+```bash
+pnpm changeset          # describe the change
+pnpm version-packages   # apply versions and changelogs
+pnpm release            # build and publish
+```
+
+`release.yml` opens a version pull request as changesets accumulate and publishes when that pull
+request merges. It needs an `NPM_TOKEN` secret with publish rights to the `@stevenpg` scope;
+provenance signs through GitHub's OIDC.
+
+Publish through pnpm, not npm. pnpm rewrites the `workspace:^` range on core into a real semver
+range when it packs; npm ships the literal string, producing a tarball that installs nowhere.
+`pnpm check:pack` guards against it and runs before every release.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
+
+Built on [CesiumJS](https://cesium.com/platform/cesiumjs/), [H3](https://h3geo.org/) and
+[S2](http://s2geometry.io/).

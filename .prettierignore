@@ -1,0 +1,5 @@
+dist
+docs-dist
+pnpm-lock.yaml
+*.md
+apps/demo/public/api

@@ -35,6 +35,10 @@ import { join } from 'node:path';
 
 const PACKAGES = ['packages/core', 'packages/h3', 'packages/s2'];
 const CESIUM = process.env.CESIUM_VERSION ?? '1.144.0';
+// The declarations are checked across a range of these in CI; 5.0 is the
+// oldest that understands `moduleResolution: Bundler`, which the consumer
+// tsconfig below uses.
+const TYPESCRIPT = process.env.TYPESCRIPT_VERSION ?? '5';
 
 const root = mkdtempSync(join(tmpdir(), 'consumer-'));
 const tarballDir = join(root, 'tarballs');
@@ -119,7 +123,7 @@ try {
   cpSync('examples/src', join(project, 'src', 'examples'), { recursive: true });
   const examples = readdirSync(join(project, 'src', 'examples')).filter((f) => f.endsWith('.ts'));
 
-  console.log(`Installing with npm (cesium@${CESIUM})...`);
+  console.log(`Installing with npm (cesium@${CESIUM}, typescript@${TYPESCRIPT})...`);
   run(
     'npm',
     [
@@ -127,7 +131,7 @@ try {
       '--no-audit',
       '--no-fund',
       `cesium@${CESIUM}`,
-      'typescript@5',
+      `typescript@${TYPESCRIPT}`,
       'esbuild@0.24',
       ...tarballs,
     ],
@@ -135,6 +139,7 @@ try {
   );
 
   console.log('Typechecking the published declarations, including every example...');
+  process.stdout.write(`  ${run('npx', ['tsc', '--version'], project)}`);
   run('npx', ['tsc', '--noEmit'], project);
 
   console.log('Running the built ESM output under Node...');

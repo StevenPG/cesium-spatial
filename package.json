@@ -30,7 +30,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "playwright test",
-    "check:packages": "pnpm -r --filter \"./packages/*\" exec publint",
+    "check:packages": "pnpm -r --filter \"./packages/*\" exec publint --strict",
     "check:pack": "node scripts/check-pack.mjs",
     "check:consumer": "node scripts/check-consumer.mjs",
     "typecheck:packages": "pnpm --filter \"./packages/*\" exec tsc --noEmit",

@@ -48,7 +48,7 @@ jobs:
         run: node scripts/check-pack.mjs
 
       - name: publint
-        run: pnpm -r --filter "./packages/*" exec publint
+        run: pnpm -r --filter "./packages/*" exec publint --strict
 
       # ESM-only is deliberate for a browser library, so the CJS-resolves-to-ESM
       # finding is expected rather than a defect. Everything else must be clean.
@@ -80,3 +80,30 @@ jobs:
       # sources, so a broken exports map or a file missing from `files` would
       # pass everything else and only fail for a real consumer.
       - run: node scripts/check-consumer.mjs
+
+  types:
+    name: Declarations on TypeScript ${{ matrix.typescript }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 5.0 is the floor: the first release that understands
+        # `moduleResolution: Bundler`, which is what a modern consumer uses.
+        typescript: ['5.0', '5.4', '5.8', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Same consumer check, with the installed compiler pinned. A library that
+      # ships declarations is only as compatible as the oldest compiler that
+      # can read them, and nothing else here would notice syntax that needs a
+      # newer one.
+      - run: node scripts/check-consumer.mjs
+        env:
+          TYPESCRIPT_VERSION: ${{ matrix.typescript }}

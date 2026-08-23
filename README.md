@@ -113,6 +113,12 @@ The floor is verified rather than assumed: `cesium-matrix.yml` typechecks and te
 against 1.95, 1.110, 1.120, 1.144 and the current release, weekly and on every change to
 `packages/`.
 
+TypeScript is floored at 5.0, the first release that understands `moduleResolution: Bundler`. That
+is checked the same way rather than claimed: CI installs the published tarballs into a fresh project
+and typechecks the declarations and every example under 5.0, 5.4, 5.8 and the current release. A
+library that ships its own types is only as compatible as the oldest compiler that can read them,
+and nothing in a normal build would notice a declaration that needs a newer one.
+
 ## Development
 
 ```bash
@@ -133,7 +139,7 @@ Everything that needs a camera or a pick is covered by the browser tests in `e2e
 
 | Workflow | What it does |
 | --- | --- |
-| `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; and a full consumer install |
+| `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; a full consumer install; and the declarations against four TypeScript versions |
 | `e2e.yml` | Ten Playwright tests driving the built demo in a real browser |
 | `cesium-matrix.yml` | The packages against five CesiumJS versions, weekly and whenever they change |
 | `version.yml` | Keeps a version pull request open as changesets accumulate |

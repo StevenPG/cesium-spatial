@@ -68,6 +68,10 @@ Pick the packages you touched and the bump type, then describe the change as a u
 would read it in a changelog. The three packages are versioned in lockstep. Changes confined to the
 demo or to documentation do not need one.
 
+You do not need to think about releasing beyond that. Changesets on `main` accumulate into a
+`chore: version packages` pull request; a maintainer merges it to set the version and pushes a
+matching `v*` tag when it should ship. The tag is what publishes.
+
 ## Style
 
 Prettier and ESLint are configured; `pnpm format` and `pnpm lint:fix` will sort out most things.

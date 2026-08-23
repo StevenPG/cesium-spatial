@@ -131,15 +131,18 @@ Everything that needs a camera or a pick is covered by the browser tests in `e2e
 
 ## Continuous integration
 
-Everything below runs on pull requests and on pushes to `main`.
-
 | Workflow | What it does |
 | --- | --- |
 | `ci.yml` | Format, lint, build, typecheck and unit tests; package correctness; and a full consumer install |
 | `e2e.yml` | Ten Playwright tests driving the built demo in a real browser |
 | `cesium-matrix.yml` | The packages against five CesiumJS versions, weekly and whenever they change |
-| `release.yml` | Opens a version pull request as changesets accumulate, then publishes with provenance |
+| `version.yml` | Keeps a version pull request open as changesets accumulate |
+| `release.yml` | Publishes to npm when a `v*` tag is pushed |
 | `pages.yml` | Builds and deploys this site |
+
+`ci.yml` and `e2e.yml` run on every pull request and every push to `main`; `cesium-matrix.yml` on
+pull requests that touch `packages/`, and weekly besides. `version.yml` and `release.yml` are the
+two halves of [Releasing](#releasing), and `pages.yml` redeploys the site whenever `main` moves.
 
 ### What actually gets tested against the built package
 
@@ -167,21 +170,46 @@ weekly matrix run covers new releases instead.
 ## Releasing
 
 Versioning runs on [Changesets](https://github.com/changesets/changesets), with all three packages
-moving in lockstep.
+moving in lockstep. Publishing is separate from it and is triggered by a tag, so deciding a version
+and deciding to ship it are two different moments.
+
+A change that affects a published package carries a changeset describing it:
 
 ```bash
-pnpm changeset          # describe the change
-pnpm version-packages   # apply versions and changelogs
-pnpm release            # build and publish
+pnpm changeset
 ```
 
-`release.yml` opens a version pull request as changesets accumulate and publishes when that pull
-request merges. It needs an `NPM_TOKEN` secret with publish rights to the `@stevenpg` scope;
-provenance signs through GitHub's OIDC.
+Once those land on `main`, `version.yml` keeps a `chore: version packages` pull request open holding
+the resulting version bumps and changelog entries. Merging it sets the version. Nothing is published
+at that point, and the branch can sit there as long as it needs to.
 
-Publish through pnpm, not npm. pnpm rewrites the `workspace:^` range on core into a real semver
-range when it packs; npm ships the literal string, producing a tarball that installs nowhere.
-`pnpm check:pack` guards against it and runs before every release.
+Shipping is a tag:
+
+```bash
+pnpm release:tag       # reads the version, tags it, pushes it
+```
+
+or by hand, if you would rather see it:
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+`release.yml` picks up any `v*` tag, checks out the tag itself, and refuses to go further unless the
+tag matches the versions in the tree, no changeset is still unapplied, and none of the three
+versions already exists on the registry. Only then does it run the full verification, the package
+and consumer checks, publish through pnpm with provenance, and open a GitHub release carrying that
+version's changelog entries. `pnpm check:release v0.2.0` runs the same gate locally.
+
+Three details are load-bearing. The version guard exists because npm publishes one package at a time
+and refuses to overwrite, so a mismatch discovered mid-publish leaves a release half done with no
+clean way back. The publish goes through pnpm rather than npm because pnpm rewrites the
+`workspace:^` range on core into real semver as it packs, while npm ships the literal string and
+produces a tarball that installs nowhere — `pnpm check:pack` guards that separately. And the tag is
+checked out directly rather than the branch it sits on, so what gets published is what was tagged.
+
+Publishing needs an `NPM_TOKEN` secret with rights to the `@stevenpg` scope; provenance signs
+through GitHub's OIDC and needs no secret of its own.
 
 ## License
 

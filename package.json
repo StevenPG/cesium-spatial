@@ -23,7 +23,6 @@
     "typecheck": "pnpm -r typecheck",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish",
     "verify": "pnpm format:check && pnpm lint && pnpm build && pnpm typecheck && pnpm test",
     "build:site": "pnpm build:docs && pnpm --filter @cesium-spatial/demo build",
     "lint": "eslint .",
@@ -35,7 +34,9 @@
     "check:pack": "node scripts/check-pack.mjs",
     "check:consumer": "node scripts/check-consumer.mjs",
     "typecheck:packages": "pnpm --filter \"./packages/*\" exec tsc --noEmit",
-    "build:docs": "pnpm build && typedoc"
+    "build:docs": "pnpm build && typedoc",
+    "check:release": "node scripts/check-release.mjs",
+    "release:tag": "node scripts/tag-release.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

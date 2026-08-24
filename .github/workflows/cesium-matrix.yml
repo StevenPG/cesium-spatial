@@ -34,10 +34,14 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
 
-      # An override pins one version across every workspace package at once,
-      # which a per-package install cannot do reliably.
-      - name: Pin CesiumJS to ${{ matrix.cesium }}
-        run: pnpm pkg set "pnpm.overrides.cesium=${{ matrix.cesium }}"
+      # Pinning `cesium` alone is not enough. CesiumJS is split across three
+      # packages that depend on each other through caret ranges, so installing
+      # an old release today re-resolves those to whatever is newest inside
+      # them and produces a combination no release ever shipped. The script
+      # pins the release's declared ranges to their floors instead; the note in
+      # it explains what that was hiding.
+      - name: Pin CesiumJS ${{ matrix.cesium }} and the tree it shipped with
+        run: node scripts/pin-cesium.mjs "${{ matrix.cesium }}"
 
       - run: pnpm install --no-frozen-lockfile
 

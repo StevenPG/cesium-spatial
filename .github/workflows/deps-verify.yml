@@ -59,7 +59,7 @@ jobs:
           path: pages-artifact
       - name: The Pages artifact is a valid tarball with the site in it
         run: |
-          tar -tzf pages-artifact/artifact.tar | sort > listing.txt
+          tar -tf pages-artifact/artifact.tar | sort > listing.txt
           head -20 listing.txt
           echo "entries: $(wc -l < listing.txt)"
           grep -qx './index.html' listing.txt

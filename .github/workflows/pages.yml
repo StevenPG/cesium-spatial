@@ -35,7 +35,7 @@ jobs:
       # Builds packages, then the demo, then TypeDoc into docs-dist/api.
       # The order matters: the demo build clears docs-dist.
       - run: pnpm build:site
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: docs-dist
 

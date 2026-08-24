@@ -1,0 +1,69 @@
+# Temporary: exercises the action versions proposed in the open Dependabot
+# pull requests on the steps that normal PR CI never reaches (the Playwright
+# artifact upload only runs on failure; the Pages upload only runs on main).
+# Delete once the bumps are merged.
+name: Dependabot bump verification
+
+on:
+  push:
+    branches: [claude/dependabot-prs-review-r6b50n]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  upload-artifact-v7:
+    name: upload-artifact@v7 with the e2e failure-path inputs
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir -p playwright-report test-results/example
+          echo '<html>report</html>' > playwright-report/index.html
+          echo 'trace' > test-results/example/trace.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - uses: actions/download-artifact@v7
+        with:
+          name: playwright-report
+          path: roundtrip
+      - name: The uploaded artifact contains both trees
+        run: |
+          find roundtrip -type f | sort
+          test -f roundtrip/playwright-report/index.html
+          test -f roundtrip/test-results/example/trace.txt
+
+  upload-pages-artifact-v5:
+    name: upload-pages-artifact@v5 over the real site build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:site
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs-dist
+      - uses: actions/download-artifact@v7
+        with:
+          name: github-pages
+          path: pages-artifact
+      - name: The Pages artifact is a valid tarball with the site in it
+        run: |
+          tar -tzf pages-artifact/artifact.tar | sort > listing.txt
+          head -20 listing.txt
+          echo "entries: $(wc -l < listing.txt)"
+          grep -qx './index.html' listing.txt
+          grep -qx './demo.html' listing.txt
+          grep -q '^./api/index.html$' listing.txt
+          echo 'dotfiles in the artifact:'
+          grep -E '(^|/)\.[^/]+$' listing.txt || echo '(none — expected, v4+ drops hidden files)'

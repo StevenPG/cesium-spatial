@@ -1,0 +1,55 @@
+# Verifies the `cesium >= 1.95` peer range the READMEs claim.
+#
+# Only the packages are checked, not the demo — the demo uses newer Viewer
+# options on purpose and is not part of the compatibility promise.
+name: Cesium compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'packages/**'
+      - '.github/workflows/cesium-matrix.yml'
+  schedule:
+    # Weekly, so a new CesiumJS release that breaks the range shows up on its
+    # own rather than when someone happens to open a pull request.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    name: cesium ${{ matrix.cesium }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cesium: ['1.95.0', '1.110.0', '1.120.0', '1.144.0', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      # Pinning `cesium` alone is not enough. CesiumJS is split across three
+      # packages that depend on each other through caret ranges, so installing
+      # an old release today re-resolves those to whatever is newest inside
+      # them and produces a combination no release ever shipped. The script
+      # pins the release's declared ranges to their floors instead; the note in
+      # it explains what that was hiding.
+      - name: Pin CesiumJS ${{ matrix.cesium }} and the tree it shipped with
+        run: node scripts/pin-cesium.mjs "${{ matrix.cesium }}"
+
+      - run: pnpm install --no-frozen-lockfile
+
+      # Build first. The grid packages import core across the workspace and
+      # resolve it through its generated declarations, so on a fresh checkout
+      # with no dist there is nothing for `tsc` to find and every cross-package
+      # import fails to resolve. `pnpm verify` orders these the same way for
+      # the same reason.
+      - run: pnpm build
+      - run: pnpm typecheck:packages
+      - run: pnpm test

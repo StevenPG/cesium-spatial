@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cesium-spatial &middot; H3 and S2 grids for CesiumJS</title>
+    <meta
+      name="description"
+      content="Spatial index helpers for CesiumJS. Cover the current view with H3 cells, render thousands of them as one primitive, and traverse neighbors, parents and children without touching h3-js."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="eyebrow">cesium-spatial</p>
+        <h1>H3 and S2 grids,<br />without the grid library.</h1>
+        <p>
+          Cover what the camera is looking at with H3 hexagons or S2 cells, draw thousands of them
+          as a single batched primitive, and walk neighbors, parents and children &mdash; all in
+          Cesium's own vocabulary. No grid-library internals, no hand-rolled level-of-detail, no
+          antimeridian surprises.
+        </p>
+        <div class="cta-row">
+          <a class="button primary" href="./demo.html">Open the live demo</a>
+          <a class="button" href="./api/index.html">API reference</a>
+          <a class="button" href="https://github.com/StevenPG/cesium-spatial">View on GitHub</a>
+        </div>
+      </header>
+
+      <section>
+        <h2>Install</h2>
+        <p>
+          Cesium stays a peer dependency, so the library never pulls in a second copy of the engine.
+          Anything from CesiumJS 1.95 onward works, and <code>@cesium/engine</code> is supported
+          too.
+        </p>
+        <pre><code>npm install @stevenpg/cesium-h3 cesium   # hexagons
+npm install @stevenpg/cesium-s2 cesium   # or S2 cells</code></pre>
+      </section>
+
+      <section>
+        <h2>A layer that follows the camera</h2>
+        <p>
+          <code>H3ViewLayer</code> is the whole feature in one object: it watches the camera, picks
+          a resolution from the view's ground resolution, covers the visible extent, and rebuilds
+          only when the set of cells actually changes.
+        </p>
+        <pre><code>import { Viewer } from 'cesium';
+import { H3ViewLayer } from '@stevenpg/cesium-h3';
+
+const viewer = new Viewer('cesiumContainer');
+
+const layer = new H3ViewLayer(viewer.scene, {
+  maxCells: 8000,        // budget; coarsens rather than overrunning
+  targetEdgePixels: 72,  // how big a cell should look on screen
+  outlines: true,
+});</code></pre>
+      </section>
+
+      <section>
+        <h2>Or drive it yourself</h2>
+        <p>
+          Every piece underneath is a plain function. Cover an extent, traverse the grid, and hand
+          the result to a batched layer whenever you like.
+        </p>
+        <pre><code>import { cellAt, disk, parent, H3CellLayer } from '@stevenpg/cesium-h3';
+import { Color } from 'cesium';
+
+const origin = cellAt(-122.4194, 37.7749, 9);   // longitude first
+const patch  = disk(origin, 12);                // 469 cells
+
+const layer = new H3CellLayer(viewer.scene, {
+  style: (cell) => ({
+    color: cell === origin ? Color.ORANGE : Color.CYAN.withAlpha(0.3),
+  }),
+});
+
+layer.setCells(patch);
+layer.setCellStyle(parent(origin), { color: Color.MAGENTA });  // no rebuild</code></pre>
+      </section>
+
+      <section>
+        <h2>What it handles for you</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>View-driven cover</h3>
+            <p>
+              Camera to visible extent to cells, with the resolution derived from ground
+              meters-per-pixel rather than a made-up zoom number.
+            </p>
+          </div>
+          <div class="card">
+            <h3>A real cell budget</h3>
+            <p>
+              Counts are estimated from area before any cells are generated, so a zoomed-out view
+              coarsens instead of trying to build millions of hexagons.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Batched rendering</h3>
+            <p>
+              Thousands of cells become one primitive. Recoloring writes straight into per-instance
+              attributes, so styling never rebuilds geometry.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Picking that works</h3>
+            <p>
+              Batched primitives report geometry instances, not objects. <code>CellPicker</code>
+              turns a click or hover back into a cell index.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Antimeridian and poles</h3>
+            <p>
+              Wrapping extents are split before H3 sees them, so a wide view covers the longitudes
+              you asked for rather than their complement.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Pentagon-safe traversal</h3>
+            <p>
+              Neighbors and rings use the safe H3 paths, so the twelve pentagons behave like every
+              other cell instead of returning nothing. S2 has no exceptions to begin with.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Entities when you need them</h3>
+            <p>
+              <code>H3EntityLayer</code> gives each cell a real Cesium entity, with an options bag
+              or a full factory hook for construction.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Terrain and extrusion</h3>
+            <p>
+              Drape cells over terrain, or extrude them into prisms with a per-cell height for the
+              usual data-on-a-globe treatment.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>API reference</h2>
+        <p>
+          Every exported function, class and option across the three packages, generated from the
+          source with TypeDoc and cross-linked to Cesium's own reference.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3><a href="./api/modules/_stevenpg_cesium-h3.html">cesium-h3</a></h3>
+            <p>Hexagon cells: traversal, cover, layers and resolution mapping.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./api/modules/_stevenpg_cesium-s2.html">cesium-s2</a></h3>
+            <p>S2 cells: tokens, four-neighbor traversal, uniform and adaptive covers.</p>
+          </div>
+          <div class="card">
+            <h3><a href="./api/modules/_stevenpg_cesium-spatial-core.html">spatial-core</a></h3>
+            <p>Shared rendering, picking, camera measurement and level-of-detail.</p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Packages</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>@stevenpg/cesium-h3</h3>
+            <p>The H3 hexagonal grid. Available now.</p>
+          </div>
+          <div class="card">
+            <h3>@stevenpg/cesium-s2</h3>
+            <p>
+              The S2 quadrilateral grid. Four neighbors everywhere, tokens instead of indices, and
+              S2's native mixed-level covering.
+            </p>
+          </div>
+          <div class="card">
+            <h3>@stevenpg/cesium-spatial-core</h3>
+            <p>
+              Shared rendering, camera measurement and level-of-detail. Installed for you as a
+              dependency; use it directly only if you are building your own index.
+            </p>
+          </div>
+        </div>
+        <p class="note">
+          Both grids run on the same core, so S2 arrived as an adapter rather than a second
+          implementation. Each package keeps its own idiom, though &mdash; H3 speaks of resolutions,
+          disks and rings, S2 of levels, tokens and cube faces &mdash; so they read naturally to
+          anyone who already knows that index.
+        </p>
+      </section>
+
+      <footer>
+        <a href="./api/index.html">API reference</a> &middot;
+        <a href="./demo.html">Demo</a> &middot; Apache-2.0 &middot;
+        <a href="https://github.com/StevenPG/cesium-spatial">github.com/StevenPG/cesium-spatial</a>
+        &middot; Built on <a href="https://cesium.com/platform/cesiumjs/">CesiumJS</a>,
+        <a href="https://h3geo.org/">H3</a> and <a href="http://s2geometry.io/">S2</a>
+      </footer>
+    </div>
+  </body>
+</html>

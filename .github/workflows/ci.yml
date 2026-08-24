@@ -1,0 +1,128 @@
+# Lint, typecheck, test and build on every pull request.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Format, lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+
+  packages:
+    name: Package correctness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Catches the failure mode that nothing else would: pnpm rewrites
+      # `workspace:^` when it packs and npm does not, so a tarball built by the
+      # wrong tool installs nowhere.
+      - name: Check what would actually publish
+        run: node scripts/check-pack.mjs
+
+      - name: publint
+        run: pnpm -r --filter "./packages/*" exec publint --strict
+
+      # ESM-only is deliberate for a browser library, so the CJS-resolves-to-ESM
+      # finding is expected rather than a defect. Everything else must be clean.
+      - name: Check type resolution across module systems
+        run: |
+          for dir in packages/core packages/h3 packages/s2; do
+            (cd "$dir" && pnpm exec attw --pack . --ignore-rules cjs-resolves-to-esm)
+          done
+
+  consumer:
+    name: Build, install and bundle as a consumer would
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # The only step that exercises what actually ships. Packs the real
+      # tarballs, installs them with plain npm, then typechecks the published
+      # declarations, runs the ESM output, bundles every example in examples/
+      # against the built package, and checks tree-shaking still works.
+      #
+      # The demo does not cover this: its bundler is aliased at the package
+      # sources, so a broken exports map or a file missing from `files` would
+      # pass everything else and only fail for a real consumer.
+      - run: node scripts/check-consumer.mjs
+
+  types:
+    name: Declarations on TypeScript ${{ matrix.typescript }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 5.0 is the floor: the first release that understands
+        # `moduleResolution: Bundler`, which is what a modern consumer uses.
+        typescript: ['5.0', '5.4', '5.8', 'latest']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      # Same consumer check, with the installed compiler pinned. A library that
+      # ships declarations is only as compatible as the oldest compiler that
+      # can read them, and nothing else here would notice syntax that needs a
+      # newer one.
+      - run: node scripts/check-consumer.mjs
+        env:
+          TYPESCRIPT_VERSION: ${{ matrix.typescript }}
+
+  published:
+    name: Install the released packages from npm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Nothing local is involved: this installs whatever is on the public
+      # registry under the "latest" tag and checks that it works. It is the
+      # only job that can catch a release that went out wrong rather than a
+      # build that came out wrong.
+      #
+      # Until the first release exists the registry returns a 404 for all three
+      # packages, and the script treats that as a skip, so this is green on a
+      # repository that has never published.
+      - run: node scripts/check-published.mjs

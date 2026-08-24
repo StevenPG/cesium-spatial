@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>cesium-spatial &middot; live demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div class="viewer-shell">
+      <div id="cesiumContainer"></div>
+
+      <aside class="rail">
+        <header class="rail-head">
+          <div class="mark">cesium<span>-spatial</span></div>
+          <div class="switch" role="group" aria-label="Spatial index">
+            <button type="button" id="systemH3" aria-pressed="true">H3</button>
+            <button type="button" id="systemS2" aria-pressed="false">S2</button>
+          </div>
+        </header>
+
+        <!-- The showpiece: what the camera wants, what the budget allows, and
+             what is actually drawn, all on one scale. -->
+        <section class="module">
+          <div class="module-head">
+            <h2 id="ladderHeading">Resolution</h2>
+            <span class="mode" id="ladderMode" data-pinned="false">auto</span>
+          </div>
+          <div class="ladder-wrap">
+            <div class="ladder" id="ladder" role="radiogroup"></div>
+            <div class="ladder-target" aria-hidden="true">
+              <span></span><span><i id="targetMark"></i></span><span></span>
+            </div>
+          </div>
+          <p class="ladder-key">
+            <span class="key-drawn">drawn</span>
+            <span class="key-wanted">camera</span>
+            <span class="key-blocked">over budget</span>
+          </p>
+          <p class="ladder-hint">
+            Bar length is a cell edge at screen scale; the dashed line is your target. Click a rung
+            to pin it, click again to release. H3 has sixteen resolutions, S2 thirty-one levels.
+          </p>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Observation</h2></div>
+          <dl class="gauges">
+            <div>
+              <dt>cells drawn</dt>
+              <dd id="statCells">&mdash;</dd>
+            </div>
+            <div>
+              <dt>ground scale</dt>
+              <dd id="statScale">&mdash;</dd>
+            </div>
+            <div>
+              <dt>camera altitude</dt>
+              <dd id="statHeight">&mdash;</dd>
+            </div>
+            <div>
+              <dt>budget headroom</dt>
+              <dd id="statHeadroom">&mdash;</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Scale</h2></div>
+          <div class="field">
+            <label for="edgePixels">target cell edge</label>
+            <input type="range" id="edgePixels" min="24" max="200" step="4" value="72" />
+            <output id="edgePixelsOut">72 px</output>
+          </div>
+          <div class="field">
+            <label for="budget">cell budget</label>
+            <input type="range" id="budget" min="500" max="20000" step="500" value="6000" />
+            <output id="budgetOut">6000</output>
+          </div>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Render</h2></div>
+          <div class="field">
+            <label for="palette">color by</label>
+            <select id="palette">
+              <option value="uniform">uniform</option>
+              <option value="latitude" selected>latitude</option>
+              <option value="hash">cell index</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="enabled">grid visible</label>
+            <input type="checkbox" id="enabled" checked />
+          </div>
+          <div class="field">
+            <label for="outlines">outlines</label>
+            <input type="checkbox" id="outlines" checked />
+          </div>
+          <div class="field">
+            <label for="extrude">extrude to prisms</label>
+            <input type="checkbox" id="extrude" />
+          </div>
+          <div class="field">
+            <label for="clamp">clamp to terrain</label>
+            <input type="checkbox" id="clamp" />
+          </div>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Selection</h2></div>
+          <div class="field">
+            <label for="relation">highlight</label>
+            <select id="relation"></select>
+          </div>
+          <div class="readout" id="readout">
+            <span class="empty">Click a cell on the globe to inspect it.</span>
+          </div>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Basemap</h2></div>
+          <div class="field">
+            <label for="imagery">imagery</label>
+            <select id="imagery">
+              <option value="esri" selected>esri world imagery</option>
+              <option value="natural-earth">natural earth</option>
+              <option value="osm">openstreetmap</option>
+              <option value="none">none</option>
+            </select>
+          </div>
+          <p class="note-line">
+            Esri World Imagery is a live service and needs no key. Natural Earth ships with Cesium
+            and works offline, and is used automatically if a live service cannot be reached.
+          </p>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Terrain</h2></div>
+          <div class="field">
+            <label for="ionToken">ion token</label>
+            <input type="password" id="ionToken" placeholder="optional" style="width: 120px" />
+          </div>
+          <p class="note-line" id="terrainNote">
+            Runs token-free on the ellipsoid. Paste a Cesium ion token to load world terrain and
+            give clamping something to drape over.
+          </p>
+        </section>
+
+        <section class="module">
+          <div class="module-head"><h2>Docs</h2></div>
+          <p class="note-line">
+            Every control here maps to one option of the active system's view layer (<code
+              id="layerName"
+              >H3ViewLayer</code
+            >).
+          </p>
+          <p class="note-line">
+            <a href="./api/index.html">API reference</a> &middot;
+            <a href="./index.html">Overview</a> &middot;
+            <a href="https://github.com/StevenPG/cesium-spatial">GitHub</a>
+          </p>
+        </section>
+      </aside>
+
+      <div class="hint">
+        <span><kbd>click</kbd> inspect a cell</span>
+        <span><kbd>hover</kbd> highlight</span>
+        <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> pin level</span>
+      </div>
+    </div>
+    <script type="module" src="./src/demo.ts"></script>
+  </body>
+</html>

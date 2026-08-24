@@ -1,0 +1,109 @@
+# The second half of a release: a pushed tag becomes an npm publish.
+#
+#   git tag v0.2.0 && git push origin v0.2.0     (or: pnpm release:tag)
+#
+# The tag is the only trigger. Nothing publishes on a merge, so a version can
+# sit on main for as long as it needs to before it goes out, and re-running
+# this workflow against the same tag is safe: the registry already has that
+# version and the check below stops before anything is attempted.
+#
+# Requires an NPM_TOKEN secret with publish rights to the @stevenpg scope.
+# Provenance is signed through GitHub's OIDC, which is why id-token is granted.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to publish, for example v0.2.0'
+        required: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    name: Publish ${{ inputs.tag || github.ref_name }}
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@stevenpg/cesium-h3
+    env:
+      RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Check out the tag itself, not the branch it happens to sit on.
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cheap and first: the tag has to match the versions in the tree, no
+      # changeset may still be unapplied, and none of the three versions may
+      # already exist on the registry. npm publishes one package at a time and
+      # refuses to overwrite, so finding any of that out mid-publish leaves the
+      # release half done.
+      - name: Check the tag against the tree and the registry
+        run: node scripts/check-release.mjs "$RELEASE_TAG"
+
+      # A release is not the place to discover a lint failure, so the tag gets
+      # the same treatment a pull request does, plus the checks that look at
+      # the built artifact rather than the workspace.
+      - run: pnpm verify
+      - run: node scripts/check-pack.mjs
+      - run: pnpm -r --filter "./packages/*" exec publint --strict
+      - run: node scripts/check-consumer.mjs
+
+      # pnpm, not npm: pnpm rewrites the `workspace:^` dependency on core into
+      # a real range as it packs, and npm ships the literal string, producing a
+      # tarball that installs nowhere. --no-git-checks because a detached tag
+      # checkout is not a branch.
+      - name: Publish to npm
+        run: pnpm publish -r --access public --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+
+      # The registry takes a moment to serve what was just written, so wait for
+      # the version to be readable before checking it. This is the same script
+      # ci.yml runs; here it is confirming the release that just happened.
+      - name: Verify the release from the registry
+        run: |
+          version="${RELEASE_TAG#v}"
+          for attempt in 1 2 3 4 5 6; do
+            if npm view "@stevenpg/cesium-h3@$version" version >/dev/null 2>&1; then break; fi
+            echo "waiting for $version to appear on the registry (attempt $attempt)"
+            sleep 20
+          done
+          node scripts/check-published.mjs
+
+      - name: Collect the changelog entries for this version
+        run: node scripts/release-notes.mjs "${RELEASE_TAG#v}" > /tmp/notes.md
+
+      # A tag carrying a prerelease suffix is marked as one, so it does not
+      # become the repository's "latest release".
+      - name: Create the GitHub release
+        run: |
+          prerelease=""
+          case "$RELEASE_TAG" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$RELEASE_TAG" \
+            --title "$RELEASE_TAG" \
+            --notes-file /tmp/notes.md \
+            --verify-tag $prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

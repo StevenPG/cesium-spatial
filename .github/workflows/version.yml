@@ -1,0 +1,49 @@
+# The first half of a release: turning accumulated changesets into a version.
+#
+# Every merge to main that carries a changeset updates a "chore: version
+# packages" pull request holding the version bumps and changelog entries.
+# Merging that pull request is what sets the version; it does not publish.
+# Publishing happens in release.yml, when a tag matching the new version is
+# pushed.
+name: Version
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  version:
+    name: Open or update the version pull request
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # No `publish:` input, so this only ever versions. The action opens the
+      # pull request when changesets are pending and does nothing when they
+      # are not.
+      - uses: changesets/action@v1
+        with:
+          version: pnpm version-packages
+          commit: 'chore: version packages'
+          title: 'chore: version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

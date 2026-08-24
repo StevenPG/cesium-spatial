@@ -1,0 +1,17 @@
+{
+  "name": "@cesium-spatial/examples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Typechecked usage examples. Not published.",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@stevenpg/cesium-h3": "workspace:*",
+    "@stevenpg/cesium-s2": "workspace:*",
+    "@stevenpg/cesium-spatial-core": "workspace:*",
+    "cesium": "^1.120.0",
+    "typescript": "^5.6.0"
+  }
+}

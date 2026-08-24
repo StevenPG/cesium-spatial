@@ -40,6 +40,12 @@ jobs:
         run: pnpm pkg set "pnpm.overrides.cesium=${{ matrix.cesium }}"
 
       - run: pnpm install --no-frozen-lockfile
-      - run: pnpm --filter "./packages/*" exec tsc --noEmit
-      - run: pnpm test
+
+      # Build first. The grid packages import core across the workspace and
+      # resolve it through its generated declarations, so on a fresh checkout
+      # with no dist there is nothing for `tsc` to find and every cross-package
+      # import fails to resolve. `pnpm verify` orders these the same way for
+      # the same reason.
       - run: pnpm build
+      - run: pnpm typecheck:packages
+      - run: pnpm test

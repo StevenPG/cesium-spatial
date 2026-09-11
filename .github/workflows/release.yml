@@ -38,7 +38,7 @@ jobs:
     env:
       RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Check out the tag itself, not the branch it happens to sit on.
           ref: ${{ inputs.tag || github.ref_name }}

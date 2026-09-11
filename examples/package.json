@@ -12,6 +12,6 @@
     "@stevenpg/cesium-s2": "workspace:*",
     "@stevenpg/cesium-spatial-core": "workspace:*",
     "cesium": "^1.120.0",
-    "typescript": "^5.6.0"
+    "typescript": "^6.0.3"
   }
 }

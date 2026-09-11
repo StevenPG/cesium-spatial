@@ -16,7 +16,7 @@
     "@stevenpg/cesium-s2": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.6.0",
+    "typescript": "^6.0.3",
     "vite": "^5.4.0",
     "vite-plugin-static-copy": "^1.0.6"
   }

@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "cesium": "^1.120.0",
-    "typescript": "^5.6.0",
+    "typescript": "^6.0.3",
     "vite": "^5.4.0",
     "vite-plugin-dts": "^5.0.3"
   }

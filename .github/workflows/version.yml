@@ -40,7 +40,7 @@ jobs:
       # No `publish:` input, so this only ever versions. The action opens the
       # pull request when changesets are pending and does nothing when they
       # are not.
-      - uses: changesets/action@v1
+      - uses: changesets/action@v2
         with:
           version: pnpm version-packages
           commit: 'chore: version packages'

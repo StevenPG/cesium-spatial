@@ -32,6 +32,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { cesiumTree } from './cesium-tree.mjs';
 
 const PACKAGES = ['packages/core', 'packages/h3', 'packages/s2'];
 const CESIUM = process.env.CESIUM_VERSION ?? '1.144.0';
@@ -39,6 +40,10 @@ const CESIUM = process.env.CESIUM_VERSION ?? '1.144.0';
 // oldest that understands `moduleResolution: Bundler`, which the consumer
 // tsconfig below uses.
 const TYPESCRIPT = process.env.TYPESCRIPT_VERSION ?? '5';
+// `cesium` alone would pull in the newest `@cesium/engine` inside its range, which
+// need not be one it works with; see cesium-tree.mjs. `cesium` is left out of
+// the overrides because npm rejects one for a direct dependency.
+const { cesium: _, ...CESIUM_OVERRIDES } = cesiumTree(CESIUM);
 
 const root = mkdtempSync(join(tmpdir(), 'consumer-'));
 const tarballDir = join(root, 'tarballs');
@@ -98,7 +103,13 @@ try {
 
   writeFileSync(
     join(project, 'package.json'),
-    JSON.stringify({ name: 'consumer-check', private: true, type: 'module', version: '1.0.0' }),
+    JSON.stringify({
+      name: 'consumer-check',
+      private: true,
+      type: 'module',
+      version: '1.0.0',
+      overrides: CESIUM_OVERRIDES,
+    }),
   );
   writeFileSync(
     join(project, 'tsconfig.json'),

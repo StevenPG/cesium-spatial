@@ -34,10 +34,15 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { cesiumTree } from './cesium-tree.mjs';
 
 const NAMES = ['@stevenpg/cesium-spatial-core', '@stevenpg/cesium-h3', '@stevenpg/cesium-s2'];
 const CESIUM = process.env.CESIUM_VERSION ?? '1.144.0';
 const TYPESCRIPT = process.env.TYPESCRIPT_VERSION ?? '5';
+// `cesium` alone would pull in the newest `@cesium/engine` inside its range, which
+// need not be one it works with; see cesium-tree.mjs. `cesium` is left out of
+// the overrides because npm rejects one for a direct dependency.
+const { cesium: _, ...CESIUM_OVERRIDES } = cesiumTree(CESIUM);
 
 const tagIndex = process.argv.indexOf('--tag');
 const TAG =
@@ -132,7 +137,13 @@ console.log('  runtime checks passed against ' + '${version}');
 try {
   writeFileSync(
     join(project, 'package.json'),
-    JSON.stringify({ name: 'published-check', private: true, type: 'module', version: '1.0.0' }),
+    JSON.stringify({
+      name: 'published-check',
+      private: true,
+      type: 'module',
+      version: '1.0.0',
+      overrides: CESIUM_OVERRIDES,
+    }),
   );
   writeFileSync(
     join(project, 'tsconfig.json'),

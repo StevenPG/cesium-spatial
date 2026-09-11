@@ -28,6 +28,9 @@ export default defineConfig({
       targets: ['Workers', 'ThirdParty', 'Assets', 'Widgets'].map((dir) => ({
         src: `${cesiumBuild}/${dir}`,
         dest: 'cesium',
+        // The plugin keeps each file's full source path under `dest`; strip the
+        // leading `node_modules/cesium/Build/Cesium` so this lands at cesium/<dir>.
+        rename: { stripBase: cesiumBuild.split('/').length },
       })),
     }),
   ],
